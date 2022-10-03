@@ -13,7 +13,7 @@ print("Server started")
 
 app = Flask(__name__)
 
-DATABASE = 'DB\BookMeDB.db'
+DATABASE = 'DB/BookMeDB.db'
 jwtKey = 'BooKMeIsCool'
 hashedAdminPwd = sha256(jwtKey.encode('utf-8'))
 #app.config['SECRET_KEY'] = 'super-secret'
