@@ -1,13 +1,5 @@
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
-CREATE TABLE IF NOT EXISTS "RegisteredChanges" (
-	"id"	INTEGER NOT NULL,
-	"userId"	INTEGER NOT NULL,
-	"date"	TEXT NOT NULL,
-	"type"	TEXT NOT NULL,
-	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("userId") REFERENCES "Users"("id")
-);
 CREATE TABLE IF NOT EXISTS "Countries" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"name"	TEXT NOT NULL UNIQUE,
@@ -265,24 +257,6 @@ INSERT INTO Countries VALUES(249,'Western Sahara');
 INSERT INTO Countries VALUES(250,'Yemen');
 INSERT INTO Countries VALUES(251,'Zambia');
 INSERT INTO Countries VALUES(252,'Zimbabwe');
-CREATE TABLE IF NOT EXISTS "Users" (
-	"id"	INTEGER NOT NULL,
-	"dateRegistered"	TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"firstName"	TEXT NOT NULL,
-	"lastName"	TEXT NOT NULL,
-	"username"	TEXT NOT NULL UNIQUE,
-	"birthDate"	TEXT NOT NULL,
-	"organization"	TEXT NOT NULL,
-	"email"	TEXT NOT NULL UNIQUE,
-	"ocupation"	TEXT NOT NULL,
-	"countryId"	INTEGER NOT NULL,
-	"hashPassword"	TEXT NOT NULL,
-	"admin"	INTEGER NOT NULL DEFAULT 0,
-	"blocked"	INTEGER NOT NULL DEFAULT 0,
-	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("countryId") REFERENCES "Countries"("id")
-);
-INSERT INTO Users VALUES(1,'2022-09-28 17:57:41','Pepo','Rodriguez','pepo117','2002-11-11 11:11:11.111','Tec','A01659891@tec.mx','Estudiante',12,'d50d3319bccca99d3093b689745b168cc79ecfd0e18e3e80be6d8c6ad1061407',0,0);
 CREATE TABLE IF NOT EXISTS "HardwareObjects" (
 	"inTypeId"	INTEGER NOT NULL,
 	"classId"	INTEGER NOT NULL,
@@ -296,19 +270,21 @@ INSERT INTO HardwareObjects VALUES(3,1,3);
 INSERT INTO HardwareObjects VALUES(4,2,1);
 INSERT INTO HardwareObjects VALUES(5,2,2);
 INSERT INTO HardwareObjects VALUES(6,1,4);
-CREATE TABLE IF NOT EXISTS "SoftwareClass" (
-	"classId"	INTEGER NOT NULL,
-	"brand"	TEXT NOT NULL,
-	"name"	TEXT NOT NULL,
-	"description"	TEXT NOT NULL,
-	"operativeSystem"	INTEGER NOT NULL,
-	"prefix"	TEXT,
-	PRIMARY KEY("classId" AUTOINCREMENT)
-);
-INSERT INTO SoftwareClass VALUES(1,'Adobe','Adobe XD','Adobe XD apoya al diseño vectorial y a los sitios web wireframe, creando prototipos simples e interactivos con un solo clic.​','Windows 10+','ADBXDW10');
-INSERT INTO SoftwareClass VALUES(2,'Adobe','Adobe XD','Adobe XD apoya al diseño vectorial y a los sitios web wireframe, creando prototipos simples e interactivos con un solo clic.​','macOS 12 (Monterey)+','ADBXDMC12');
-INSERT INTO SoftwareClass VALUES(3,'Autodesk','Autodesk Maya','Autodesk Maya es un programa informático dedicado al desarrollo de gráficos 3D por ordenador, efectos especiales, animación y de dibujo.','Windows 8+','ADMYW8');
-INSERT INTO SoftwareClass VALUES(4,'Minitab Inc.','Minitab','Minitab es un programa de computadora diseñado para ejecutar funciones estadísticas básicas y avanzadas.','Windows 7+','MNTB');
+INSERT INTO HardwareObjects VALUES(7,2,3);
+INSERT INTO HardwareObjects VALUES(8,1,5);
+INSERT INTO HardwareObjects VALUES(9,1,6);
+INSERT INTO HardwareObjects VALUES(20,3,1);
+INSERT INTO HardwareObjects VALUES(21,3,2);
+INSERT INTO HardwareObjects VALUES(22,3,3);
+INSERT INTO HardwareObjects VALUES(23,4,1);
+INSERT INTO HardwareObjects VALUES(24,5,1);
+INSERT INTO HardwareObjects VALUES(25,5,2);
+INSERT INTO HardwareObjects VALUES(26,5,3);
+INSERT INTO HardwareObjects VALUES(27,6,1);
+INSERT INTO HardwareObjects VALUES(28,6,2);
+INSERT INTO HardwareObjects VALUES(29,6,3);
+INSERT INTO HardwareObjects VALUES(30,6,4);
+INSERT INTO HardwareObjects VALUES(31,6,5);
 CREATE TABLE IF NOT EXISTS "SoftwareObjects" (
 	"inTypeId"	INTEGER NOT NULL,
 	"classId"	INTEGER NOT NULL,
@@ -320,7 +296,6 @@ INSERT INTO SoftwareObjects VALUES(1,1,1);
 INSERT INTO SoftwareObjects VALUES(2,1,2);
 INSERT INTO SoftwareObjects VALUES(3,1,3);
 INSERT INTO SoftwareObjects VALUES(4,1,4);
-INSERT INTO SoftwareObjects VALUES(5,1,5);
 INSERT INTO SoftwareObjects VALUES(6,2,1);
 INSERT INTO SoftwareObjects VALUES(7,2,2);
 INSERT INTO SoftwareObjects VALUES(8,2,3);
@@ -329,17 +304,43 @@ INSERT INTO SoftwareObjects VALUES(10,3,2);
 INSERT INTO SoftwareObjects VALUES(11,4,1);
 INSERT INTO SoftwareObjects VALUES(12,4,2);
 INSERT INTO SoftwareObjects VALUES(13,4,3);
-INSERT INTO SoftwareObjects VALUES(14,4,4);
-INSERT INTO SoftwareObjects VALUES(15,4,5);
 INSERT INTO SoftwareObjects VALUES(16,4,6);
+INSERT INTO SoftwareObjects VALUES(27,1,5);
+INSERT INTO SoftwareObjects VALUES(28,1,6);
+INSERT INTO SoftwareObjects VALUES(29,1,7);
+INSERT INTO SoftwareObjects VALUES(30,1,8);
+INSERT INTO SoftwareObjects VALUES(31,1,9);
+INSERT INTO SoftwareObjects VALUES(32,1,10);
+INSERT INTO SoftwareObjects VALUES(33,1,11);
+INSERT INTO SoftwareObjects VALUES(34,1,12);
+INSERT INTO SoftwareObjects VALUES(35,5,1);
+INSERT INTO SoftwareObjects VALUES(36,5,2);
+INSERT INTO SoftwareObjects VALUES(37,5,3);
+INSERT INTO SoftwareObjects VALUES(38,5,4);
+INSERT INTO SoftwareObjects VALUES(39,5,5);
+INSERT INTO SoftwareObjects VALUES(40,6,1);
+INSERT INTO SoftwareObjects VALUES(41,6,2);
+INSERT INTO SoftwareObjects VALUES(42,6,3);
+INSERT INTO SoftwareObjects VALUES(43,6,4);
+INSERT INTO SoftwareObjects VALUES(44,6,5);
+INSERT INTO SoftwareObjects VALUES(45,7,1);
+INSERT INTO SoftwareObjects VALUES(46,7,2);
+CREATE TABLE IF NOT EXISTS "RegisteredChanges" (
+	"id"	INTEGER NOT NULL,
+	"userId"	INTEGER NOT NULL,
+	"date"	TEXT NOT NULL,
+	"type"	TEXT NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
 CREATE TABLE IF NOT EXISTS "AvailableObjects" (
 	"generalObjectID"	INTEGER NOT NULL,
 	"hO"	INTEGER,
 	"sO"	INTEGER,
 	"rO"	INTEGER,
+	PRIMARY KEY("generalObjectID" AUTOINCREMENT),
+	FOREIGN KEY("rO") REFERENCES "Rooms"("roomId") ON DELETE CASCADE,
 	FOREIGN KEY("hO") REFERENCES "HardwareObjects"("inTypeId") ON DELETE CASCADE,
-	FOREIGN KEY("sO") REFERENCES "SoftwareObjects"("inTypeId"),
-	PRIMARY KEY("generalObjectID" AUTOINCREMENT)
+	FOREIGN KEY("sO") REFERENCES "SoftwareObjects"("inTypeId") ON DELETE CASCADE
 );
 INSERT INTO AvailableObjects VALUES(1,1,NULL,NULL);
 INSERT INTO AvailableObjects VALUES(2,2,NULL,NULL);
@@ -351,7 +352,6 @@ INSERT INTO AvailableObjects VALUES(7,NULL,1,NULL);
 INSERT INTO AvailableObjects VALUES(8,NULL,2,NULL);
 INSERT INTO AvailableObjects VALUES(9,NULL,3,NULL);
 INSERT INTO AvailableObjects VALUES(10,NULL,4,NULL);
-INSERT INTO AvailableObjects VALUES(11,NULL,5,NULL);
 INSERT INTO AvailableObjects VALUES(12,NULL,6,NULL);
 INSERT INTO AvailableObjects VALUES(13,NULL,7,NULL);
 INSERT INTO AvailableObjects VALUES(14,NULL,8,NULL);
@@ -360,38 +360,112 @@ INSERT INTO AvailableObjects VALUES(16,NULL,10,NULL);
 INSERT INTO AvailableObjects VALUES(17,NULL,11,NULL);
 INSERT INTO AvailableObjects VALUES(18,NULL,12,NULL);
 INSERT INTO AvailableObjects VALUES(19,NULL,13,NULL);
-INSERT INTO AvailableObjects VALUES(20,NULL,14,NULL);
-INSERT INTO AvailableObjects VALUES(21,NULL,15,NULL);
 INSERT INTO AvailableObjects VALUES(22,NULL,16,NULL);
 INSERT INTO AvailableObjects VALUES(23,NULL,NULL,1);
 INSERT INTO AvailableObjects VALUES(24,NULL,NULL,2);
 INSERT INTO AvailableObjects VALUES(25,NULL,NULL,3);
 INSERT INTO AvailableObjects VALUES(26,NULL,NULL,4);
 INSERT INTO AvailableObjects VALUES(27,NULL,NULL,5);
+INSERT INTO AvailableObjects VALUES(28,7,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(29,8,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(30,9,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(47,NULL,27,NULL);
+INSERT INTO AvailableObjects VALUES(48,NULL,28,NULL);
+INSERT INTO AvailableObjects VALUES(49,NULL,29,NULL);
+INSERT INTO AvailableObjects VALUES(50,NULL,30,NULL);
+INSERT INTO AvailableObjects VALUES(51,NULL,31,NULL);
+INSERT INTO AvailableObjects VALUES(52,NULL,32,NULL);
+INSERT INTO AvailableObjects VALUES(53,NULL,33,NULL);
+INSERT INTO AvailableObjects VALUES(54,NULL,34,NULL);
+INSERT INTO AvailableObjects VALUES(55,NULL,35,NULL);
+INSERT INTO AvailableObjects VALUES(56,NULL,36,NULL);
+INSERT INTO AvailableObjects VALUES(57,NULL,37,NULL);
+INSERT INTO AvailableObjects VALUES(58,NULL,38,NULL);
+INSERT INTO AvailableObjects VALUES(59,NULL,39,NULL);
+INSERT INTO AvailableObjects VALUES(60,NULL,NULL,7);
+INSERT INTO AvailableObjects VALUES(61,NULL,NULL,8);
+INSERT INTO AvailableObjects VALUES(62,20,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(63,21,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(64,22,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(65,NULL,NULL,9);
+INSERT INTO AvailableObjects VALUES(66,NULL,NULL,10);
+INSERT INTO AvailableObjects VALUES(67,23,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(68,NULL,40,NULL);
+INSERT INTO AvailableObjects VALUES(69,NULL,41,NULL);
+INSERT INTO AvailableObjects VALUES(70,NULL,42,NULL);
+INSERT INTO AvailableObjects VALUES(71,NULL,43,NULL);
+INSERT INTO AvailableObjects VALUES(72,NULL,44,NULL);
+INSERT INTO AvailableObjects VALUES(73,24,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(74,25,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(75,26,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(76,27,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(77,28,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(78,29,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(79,30,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(80,31,NULL,NULL);
+INSERT INTO AvailableObjects VALUES(81,NULL,45,NULL);
+INSERT INTO AvailableObjects VALUES(82,NULL,46,NULL);
+INSERT INTO AvailableObjects VALUES(83,NULL,NULL,11);
+INSERT INTO AvailableObjects VALUES(84,NULL,NULL,12);
 CREATE TABLE IF NOT EXISTS "HardwareClass" (
 	"classId"	INTEGER NOT NULL,
 	"name"	TEXT NOT NULL,
 	"operativeSystem"	TEXT NOT NULL,
 	"description"	TEXT NOT NULL,
 	"prefix"	INTEGER NOT NULL UNIQUE,
+	"availability"	INTEGER NOT NULL DEFAULT 1,
+	"maxDays"	INTEGER NOT NULL,
+	"deleted"	INTEGER NOT NULL DEFAULT 0,
 	PRIMARY KEY("classId" AUTOINCREMENT)
 );
-INSERT INTO HardwareClass VALUES(1,'Mac Book Air','macOS 12',replace(replace('{\r\n"cpu" : "M1",\r\n"ports" : {"usb4" : 2, "jack" : 1},\r\n"ram" : 8,\r\n"rom": {"ssd":256}\r\n}','\r',char(13)),'\n',char(10)),'MACAMTR');
-INSERT INTO HardwareClass VALUES(2,'DELL PC','Windows 10',replace(replace('{\r\n"cpu" : "i5",\r\n"ports" : {"usb3" : 3, "hdmi" :1, "jack" : 1},\r\n"ram" : 8,\r\n"rom": {"ssd":128, "hdd":1024}\r\n}','\r',char(13)),'\n',char(10)),'DLPCW10');
+INSERT INTO HardwareClass VALUES(1,'Mac Book Air','macOS 12',replace('CPU = M1\nRAM = 8GB\nSSD = 256GB','\n',char(10)),'MACAMTR',1,15,0);
+INSERT INTO HardwareClass VALUES(2,'DELL PC','Windows 10',replace(replace('CPU = i5\r\nRAM = 8GB\r\nSSD = 256GB','\r',char(13)),'\n',char(10)),'DLPCW10',1,10,0);
+INSERT INTO HardwareClass VALUES(3,'iPhone 11','iOS 12',replace('Núcleos = 4\nRAM = 6GB\nSSD = 64GB','\n',char(10)),'IPHONE11',1,15,0);
+INSERT INTO HardwareClass VALUES(4,'Arduino','Arduino','Arduino 0','ARD',1,1,1);
+INSERT INTO HardwareClass VALUES(5,'Raspberry Pi 4 B','Raspberry Pi OS',replace('USB 2 = 2\nUSB 3 = 2\nRAM = 4GB\nMicro HDMI = 2','\n',char(10)),'RSPPI4B',1,1,0);
+INSERT INTO HardwareClass VALUES(6,'Cisco 4331','Cisco iOS',replace('Gigabit = 2\nEspacios de Módulo = 2','\n',char(10)),'CSRT4331',1,1,0);
+CREATE TABLE IF NOT EXISTS "SoftwareClass" (
+	"classId"	INTEGER NOT NULL,
+	"brand"	TEXT NOT NULL,
+	"name"	TEXT NOT NULL,
+	"description"	TEXT NOT NULL,
+	"operativeSystem"	INTEGER NOT NULL,
+	"prefix"	TEXT NOT NULL,
+	"availability"	INTEGER NOT NULL DEFAULT 1,
+	"maxDays"	INTEGER NOT NULL,
+	"deleted"	INTEGER NOT NULL DEFAULT 0,
+	PRIMARY KEY("classId" AUTOINCREMENT)
+);
+INSERT INTO SoftwareClass VALUES(1,'Adobe','Adobe XD','Adobe XD apoya al diseño vectorial y a los sitios web wireframe, creando prototipos simples e interactivos con un solo clic.','Windows 10+','ADBXDW10',1,12,0);
+INSERT INTO SoftwareClass VALUES(2,'Adobe','Adobe XD','Adobe XD apoya al diseño vectorial y a los sitios web wireframe, creando prototipos simples e interactivos con un solo clic.​','macOS 12 (Monterey)+','ADBXDMC12',1,10,0);
+INSERT INTO SoftwareClass VALUES(3,'Autodesk','Autodesk Maya','Autodesk Maya es un programa informático dedicado al desarrollo de gráficos 3D por ordenador, efectos especiales, animación y de dibujo.','Windows 8+','ADMYW8',1,1,0);
+INSERT INTO SoftwareClass VALUES(4,'Minitab Inc.','Minitab','Minitab es un programa de computadora diseñado para ejecutar funciones estadísticas básicas y avanzadas.','Windows 7+','MNTB',0,10,0);
+INSERT INTO SoftwareClass VALUES(5,'Adobe','Adobe Photoshop','Adobe XD apoya al diseño vectorial y a los sitios web wireframe, creando prototipos simples e interactivos con un solo clic.','Windows 10+','ADBXDW10',0,12,0);
+INSERT INTO SoftwareClass VALUES(6,'14','Clip Studio Paint','Clip Studio Paint es una aplicación de ilustración para Mac OS X y Microsoft Windows desarrollado por Celsys para la creación digital de cómics.','Windows 7+','CSPW7',1,30,0);
+INSERT INTO SoftwareClass VALUES(7,'Pixar','RenderMan','RenderMan es tanto un software como una API desarrollada por Pixar para redes de renderizado distribuido de complejas imágenes tridimensionales, el cual es empleado en granjas de renderizado con muchos equipos cliente.','Windows 10+','RNDRMN',1,1,0);
 CREATE TABLE IF NOT EXISTS "Rooms" (
 	"roomId"	INTEGER NOT NULL,
 	"label"	TEXT NOT NULL,
-	"name"	TEXT,
+	"name"	TEXT NOT NULL,
 	"location"	TEXT NOT NULL,
 	"description"	TEXT NOT NULL,
 	"capacity"	INTEGER NOT NULL,
+	"availability"	INTEGER NOT NULL DEFAULT 1,
+	"maxDays"	INTEGER NOT NULL,
+	"deleted"	INTEGER NOT NULL DEFAULT 0,
 	PRIMARY KEY("roomId" AUTOINCREMENT)
 );
-INSERT INTO Rooms VALUES(1,'SC01','Sala de Conferencias 01','Hub de Ciberseguridad, piso 3. ','Sala de conferencias, apta para presentaciones ejecutivas a un público grande.',50);
-INSERT INTO Rooms VALUES(2,'SC02','Sala de Conferencias 02','Hub de Ciberseguridad, piso 2. ','Sala de conferencias, apta para presentaciones ejecutivas a un público grande.',40);
-INSERT INTO Rooms VALUES(3,'LABFZ-01','Laboratorio de Finanzas 01','Hub de Ciberseguridad, piso 1. ','Laboratorio de finanzas. Cuenta con 20 equipos de Bloomberg especializados para tareas pesadas de finanzas.',21);
-INSERT INTO Rooms VALUES(4,'LABFZ-02','Laboratorio de Finanzas 02','Hub de Ciberseguridad, piso 1. ','Laboratorio de finanzas. Cuenta con 20 equipos de Bloomberg especializados para tareas pesadas de finanzas.',21);
-INSERT INTO Rooms VALUES(5,'LABFZ-03','Laboratorio de Finanzas 03','Hub de Ciberseguridad, piso 1. ','Laboratorio de finanzas. Cuenta con 20 equipos de Bloomberg especializados para tareas pesadas de finanzas.',21);
+INSERT INTO Rooms VALUES(1,'SC01','Sala de Conferencias 01','Hub de Ciberseguridad, piso 3.','Sala de conferencias, apta para presentaciones ejecutivas a un público grande.',50,1,12,0);
+INSERT INTO Rooms VALUES(2,'SC02','Sala de Conferencias 02','Hub de Ciberseguridad, piso 2. ','Sala de conferencias, apta para presentaciones ejecutivas a un público grande.',40,1,10,0);
+INSERT INTO Rooms VALUES(3,'LABFZ-01','Laboratorio de Finanzas 01','Hub de Ciberseguridad, piso 1. ','Laboratorio de finanzas. Cuenta con 20 equipos de Bloomberg especializados para tareas pesadas de finanzas.',21,1,10,1);
+INSERT INTO Rooms VALUES(4,'LABFZ-02','Laboratorio de Finanzas 02','Hub de Ciberseguridad, piso 1. ','Laboratorio de finanzas. Cuenta con 20 equipos de Bloomberg especializados para tareas pesadas de finanzas.',21,1,10,0);
+INSERT INTO Rooms VALUES(5,'LABFZ-03','Laboratorio de Finanzas 03','Hub de Ciberseguridad, piso 1. ','Laboratorio de finanzas. Cuenta con 20 equipos de Bloomberg especializados para tareas pesadas de finanzas.',21,1,10,1);
+INSERT INTO Rooms VALUES(7,'SC03','Sala de Conferencias 03','Hub de Ciberseguridad, piso 3.','Sala de conferencias, apta para presentaciones ejecutivas a un público grande.',35,1,12,0);
+INSERT INTO Rooms VALUES(8,'SC04','Sala de Conferencias 04','Hub de Ciberseguridad, piso 3.','Sala de conferencias, apta para presentaciones ejecutivas a un público grande.',35,1,12,0);
+INSERT INTO Rooms VALUES(9,'1','123','123','123',123,1,123,0);
+INSERT INTO Rooms VALUES(10,'asfd a','aaaa','asfdas ','asdf as daSD ',34,0,234,0);
+INSERT INTO Rooms VALUES(11,'ADG','Auditorio General','Hub de Ciberseguridad, planta baja.','Auditorio ideal para conferencias a un público grande.',200,1,1,0);
+INSERT INTO Rooms VALUES(12,'ADG2','Auditorio General 2','Hub de Ciberseguridad, planta baja.','Auditorio ideal para conferencias a un público grande.',200,1,1,0);
 CREATE TABLE IF NOT EXISTS "ReservationTicket" (
 	"ticketId"	INTEGER NOT NULL,
 	"dateRegistered"	TEXT NOT NULL,
@@ -400,32 +474,76 @@ CREATE TABLE IF NOT EXISTS "ReservationTicket" (
 	"objectName"	TEXT NOT NULL DEFAULT 'a',
 	"startDate"	TEXT NOT NULL,
 	"endDate"	TEXT NOT NULL,
-	"userID"	INTEGER NOT NULL,
+	"userId"	INTEGER NOT NULL,
 	"description"	TEXT NOT NULL,
 	"weight"	REAL NOT NULL,
-	"qrCode"	INTEGER,
+	"qrCode"	TEXT,
 	FOREIGN KEY("objectId") REFERENCES "AvailableObjects"("generalObjectID"),
 	PRIMARY KEY("ticketId" AUTOINCREMENT)
 );
-INSERT INTO ReservationTicket VALUES(1,'2022-09-28 15:00:00.000',1,'HRDWR','Mac Book Air','2022-09-28 17:00:00.000','2022-09-28 19:00:00.000',1,'Reserva 1',2.0,NULL);
-INSERT INTO ReservationTicket VALUES(2,'2022-09-28 15:00:00.000',1,'HRDWR','Mac Book Air','2022-09-29 07:00:00.000','2022-09-29 19:00:00.000',1,'Reserva 2',12.0,NULL);
-INSERT INTO ReservationTicket VALUES(3,'2022-09-28 15:00:00.000',3,'HRDWR','Mac Book Air','2022-09-30 16:00:00.000','2022-09-30 16:30:00.000',1,'Reserva Dell ',2.0,NULL);
-INSERT INTO ReservationTicket VALUES(4,'2022-09-28 15:00:00.000',16,'SFTWR','Autodesk Maya','2022-09-30 16:00:00.000','2022-09-30 18:30:00.000',1,'Reserva XD',2.5,NULL);
-INSERT INTO ReservationTicket VALUES(5,'2022-09-28 17:00:00.000',16,'SFTWR','Autodesk Maya','2022-09-28 20:00:00.000','2022-09-28 24:30:00.000',1,'Descripción de reserva',4.0,NULL);
-INSERT INTO ReservationTicket VALUES(6,'2022-09-28 17:00:00.000',13,'SFTWR','Adobe XD','2022-09-30 20:00:00.000','2022-10-01 20:00:00.000',1,'Descripción de reserva',24.0,NULL);
-INSERT INTO ReservationTicket VALUES(7,'2022-09-29 9:00:00.000',27,'ROOM','Laboratorio de Finanzas 03','2022-09-30 12:00:00.000','2022-09-30 20:00:00.000',1,'Reservando sala de finanzas 3',8.0,NULL);
-INSERT INTO ReservationTicket VALUES(8,'2022-09-29 9:00:00.000',26,'ROOM','Laboratorio de Finanzas 02','2022-09-30 08:00:00.000','2022-09-30 12:00:00.000',1,'Reservando sala de finanzas 2',4.0,NULL);
-INSERT INTO ReservationTicket VALUES(9,'2022-09-29 9:00:00.000',26,'ROOM','Laboratorio de Finanzas 02','2022-09-30 12:30:00.000','2022-09-30 19:30:00.000',1,'Reservando sala de finanzas 2',7.5,NULL);
-INSERT INTO ReservationTicket VALUES(10,'2022-10-01 17:43:14.669',4,'HRDWR','DELL PC','2022-10-02 12:00:00.000','2022-10-02 22:00:00.000',1,'Reserva Dell',10.0,'a1b2c34d5e6f7g8h');
+INSERT INTO ReservationTicket VALUES(3,'2022-09-28 15:00:00.000',3,'HRDWR','Mac Book Air','2022-09-30 16:00:00.000','2022-09-30 16:30:00.000',1,'Reserva Dell ',2.0,'7fdad1c625');
+INSERT INTO ReservationTicket VALUES(4,'2022-09-28 15:00:00.000',16,'SFTWR','Autodesk Maya','2022-09-30 16:00:00.000','2022-09-30 18:30:00.000',1,'Reserva XD',2.5,'9908994ce3');
+INSERT INTO ReservationTicket VALUES(5,'2022-09-28 17:00:00.000',16,'SFTWR','Autodesk Maya','2022-09-28 20:00:00.000','2022-09-28 24:30:00.000',1,'Descripción de reserva',4.0,'a0559fb5aa');
+INSERT INTO ReservationTicket VALUES(6,'2022-09-28 17:00:00.000',13,'SFTWR','Adobe XD','2022-09-30 20:00:00.000','2022-10-01 20:00:00.000',1,'Descripción de reserva',24.0,'40123c506a');
+INSERT INTO ReservationTicket VALUES(7,'2022-09-29 9:00:00.000',27,'ROOM','Laboratorio de Finanzas 03','2022-09-30 12:00:00.000','2022-09-30 20:00:00.000',1,'Reservando sala de finanzas 3',8.0,'97c1fa58b7');
+INSERT INTO ReservationTicket VALUES(8,'2022-09-29 9:00:00.000',26,'ROOM','Laboratorio de Finanzas 02','2022-09-30 08:00:00.000','2022-09-30 12:00:00.000',1,'Reservando sala de finanzas 2',4.0,'c8202c0acc');
+INSERT INTO ReservationTicket VALUES(9,'2022-09-29 9:00:00.000',26,'ROOM','Laboratorio de Finanzas 02','2022-10-30 12:30:00.000','2022-10-30 19:30:00.000',1,'Reservando sala de finanzas 2',0.0,'1df7eac27c');
+INSERT INTO ReservationTicket VALUES(21,'2022-10-02 14:29:41.042',4,'HRDWR','DELL PC','2022-10-18 12:00:00.000','2022-10-19 12:00:00.000',1,'Reserva Dell',24.0,'845b21f5ff');
+INSERT INTO ReservationTicket VALUES(22,'2022-10-02 14:32:41.845',4,'HRDWR','DELL PC','2022-10-19 12:00:00.000','2022-10-20 08:00:00.000',1,'Reserva Dell',20.0,'b26c3c7350');
+INSERT INTO ReservationTicket VALUES(23,'2022-10-04 16:41:25.596',4,'HRDWR','DELL PC','2022-10-20 12:00:00.000','2022-10-20 20:00:00.000',3,'Reserva Dell',8.0,'bfb869ad5d');
+INSERT INTO ReservationTicket VALUES(24,'2022-10-04 16:41:38.448',4,'HRDWR','DELL PC','2022-10-20 22:00:00.000','2022-10-21 12:00:00.000',3,'Reserva Dell',13.999999999999999999,'a8db3050f1');
+INSERT INTO ReservationTicket VALUES(25,'2022-10-04 17:33:53.547',4,'HRDWR','DELL PC','2022-10-22 12:00:00.000','2022-10-23 12:00:00.000',3,'Reserva Dell',24.0,'e3552bb97a');
+INSERT INTO ReservationTicket VALUES(26,'2022-10-04 17:36:07.656',4,'HRDWR','DELL PC','2022-10-24 12:00:00.000','2022-10-24 22:00:00.000',1,'Reserva Dell',10.0,'b7d97a737e');
+INSERT INTO ReservationTicket VALUES(27,'2022-10-06 12:42:26.000',28,'HRDWR','DELL PC','2022-10-06 16:00:00.000','2022-10-06 18:00:00.000',1,'Reserva pc dell',2.0,'123456789a');
+CREATE TABLE IF NOT EXISTS "Users" (
+	"userId"	INTEGER NOT NULL,
+	"dateRegistered"	TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"firstName"	TEXT NOT NULL,
+	"lastName"	TEXT NOT NULL,
+	"username"	TEXT NOT NULL,
+	"birthDate"	TEXT NOT NULL,
+	"organization"	TEXT NOT NULL,
+	"email"	TEXT NOT NULL,
+	"ocupation"	TEXT NOT NULL,
+	"countryId"	INTEGER NOT NULL,
+	"hashPassword"	TEXT NOT NULL,
+	"admin"	INTEGER NOT NULL DEFAULT 0,
+	"blocked"	INTEGER NOT NULL DEFAULT 0,
+	"deleted"	INTEGER NOT NULL DEFAULT 0,
+	FOREIGN KEY("countryId") REFERENCES "Countries"("id"),
+	PRIMARY KEY("userId" AUTOINCREMENT)
+);
+INSERT INTO Users VALUES(1,'2022-09-28 17:57:41.000','Pepo','Lopez','pepo117','2002-11-11 11:11:11.111','Tec','A01659891@tec.mx','Estudiante',12,'d50d3319bccca99d3093b689745b168cc79ecfd0e18e3e80be6d8c6ad1061407',2,0,0);
+INSERT INTO Users VALUES(3,'2022-10-04 16:38:01.000','Victor','Portilla','nonwiz','2002-11-01 00:00:00.000','Tec','a01659198@tec.mx','Estudiante',107,'5f77c2500f56fe1a4abe06bf961012a3ea513ce8fbbbf4fec4d58339f95630d9',0,0,0);
+INSERT INTO Users VALUES(4,'2022-10-05 11:28:53','Yael','Goan','yael.goan01','1995-11-30','UNAM','yael.goan01@gmail.com','Estudiante',120,'kirakira',1,0,0);
+INSERT INTO Users VALUES(5,'2022-10-05 11:32:13','Misael','Chavez','wada','2002-06-20','Tec','a01653495@tec.mx','Estudiante',1,'bussybussy',0,0,0);
+INSERT INTO Users VALUES(6,'2022-10-06 17:07:13','yoel','ledo','ledo','1995-01-01','Tec','ledo@tec.mx','Profesor',1,'asdfgasdfg',0,0,0);
+CREATE TABLE IF NOT EXISTS "ToVerify" (
+	"firstName"	TEXT NOT NULL,
+	"lastName"	TEXT NOT NULL,
+	"username"	TEXT NOT NULL,
+	"birthDate"	TEXT NOT NULL,
+	"organization"	TEXT NOT NULL,
+	"email"	TEXT NOT NULL,
+	"ocupation"	TEXT NOT NULL,
+	"countryId"	INTEGER NOT NULL,
+	"hashPassword"	TEXT NOT NULL,
+	"hashKey"	TEXT NOT NULL,
+	"id"	INTEGER NOT NULL,
+	FOREIGN KEY("countryId") REFERENCES "Countries"("id"),
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+INSERT INTO ToVerify VALUES('csdvcs','wdecwdcwsd','dfsvsd','dsfv','dsfv','dsfv','sdfv',1,'sdfvzc','asfvwerv',1);
 DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence VALUES('RegisteredChanges',0);
 INSERT INTO sqlite_sequence VALUES('Countries',252);
-INSERT INTO sqlite_sequence VALUES('Users',1);
-INSERT INTO sqlite_sequence VALUES('HardwareObjects',6);
-INSERT INTO sqlite_sequence VALUES('SoftwareClass',4);
-INSERT INTO sqlite_sequence VALUES('SoftwareObjects',16);
-INSERT INTO sqlite_sequence VALUES('AvailableObjects',27);
-INSERT INTO sqlite_sequence VALUES('HardwareClass',2);
-INSERT INTO sqlite_sequence VALUES('Rooms',5);
-INSERT INTO sqlite_sequence VALUES('ReservationTicket',10);
+INSERT INTO sqlite_sequence VALUES('HardwareObjects',31);
+INSERT INTO sqlite_sequence VALUES('SoftwareObjects',46);
+INSERT INTO sqlite_sequence VALUES('RegisteredChanges',0);
+INSERT INTO sqlite_sequence VALUES('AvailableObjects',84);
+INSERT INTO sqlite_sequence VALUES('HardwareClass',6);
+INSERT INTO sqlite_sequence VALUES('SoftwareClass',7);
+INSERT INTO sqlite_sequence VALUES('Rooms',12);
+INSERT INTO sqlite_sequence VALUES('ReservationTicket',27);
+INSERT INTO sqlite_sequence VALUES('Users',10);
+INSERT INTO sqlite_sequence VALUES('ToVerify',1);
 COMMIT;

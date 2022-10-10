@@ -1,0 +1,55 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>BookMe</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Chivo&display=swap" rel="stylesheet" />
+	
+    <script src="{{ url_for('static',filename='scripts/ticketWithQr.js') }}"></script> " 
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles/ticketWithQr.css') }}">
+   
+    <script type="text/javascript">
+        var ticket = {{TICKET|tojson}};
+    </script>
+
+</head>
+<body>
+    <div id="imagenes">
+        <div id="qrCode">
+            <p>aqui va el qrcode</p>
+            <img src="{{ url_for('static',filename='resources/qrCodes/'+QRCODE+'.png') }}" alt="QR Code" width="100" height="100">
+        </div>
+        <div id="profile">
+            <p>img profile</p>
+        </div>  
+    </div> 
+    <div id="barras">
+        <img src="{{ url_for('static',filename='resources/codigodebarras.png') }}">
+    </div>
+    <div id="datosId"> 
+        <div id="ticketsid">
+            
+        </div>
+        <div id="texto">
+            <p>Confirmed</p>
+        </div>
+    </div>
+    <div id="datosTicket">
+        <div id="contenedor">
+            <div id="textoTicket">
+                
+            </div>
+            <button id="editar">
+                <a href="#" >EDIT </a>
+            </button>
+        </div>
+        <div id="diaTicket" class="datosTicked">
+            
+        </div>
+    </div>
+</body>
+
+</html>
