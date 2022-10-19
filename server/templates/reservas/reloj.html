@@ -122,14 +122,15 @@
                     <option value="24:00:00">24:00</option>
                 </select>
             </div>
-            <div id = "Horas">
-
-
-            </div>
+            
         </div>
-        <div>
+        <div id="start-end">
             <button id="start">START</button>
             <button id="end">END</button>
+        </div>
+        <div class="selection-info-div">
+            <input id="nextButton" type="image" src="https://github.com/H3cth0r/BookMe/blob/main/BookMe/Assets.xcassets/nextButtonSquare.imageset/nextButtonSquare-2.png?raw=true" name="submit">
+            <div id = "Horas"></div>
         </div>
 <script>
    /*{
@@ -193,6 +194,8 @@
         "endTime": "22:00:00"
         }
     ];
+
+    
     $(document).ready(function(){
         $('#dia').append(`<p value="`+ objectData.startDate +`">`+ objectData.startDate+ `</p>`);
     });
@@ -266,7 +269,7 @@
     overflow-y: show;
     width: 250px;
     size: 10;
-    height: 70vh;
+    height: 50vh;
     background-color: transparent;
     border: 2px solid rgb(42, 42, 42);
     color: white;
@@ -281,7 +284,7 @@
         align-items: center;
         flex-direction: column;
         width: 35vw;
-        height: 70vh;
+        height: 53vh;
         margin-left: 30%;
         margin-top: -4%;
 
@@ -302,14 +305,17 @@
     }
     #dia {
         color: white;
-    
-        margin-left: 38.5%;
         font-size: 25px;
-        
+        text-align: center;        
+    }
+
+    #start-end {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
     }
     #start {
-        margin-left: 12.5%;
-        margin-top: 5px;
         border: 1px solid white;
         background-color: transparent;
         color: white;
@@ -317,8 +323,7 @@
         height: 45px;
     }
     #end {
-        margin-left: 12.5%;
-        margin-top: 10px;
+
         border: 1px solid white;
         background-color: transparent;
         color: white;
@@ -334,18 +339,31 @@
         font-size: 20px;
         margin-top: 10px;   
     }
-    ::-webkit-scrollbar {
-  width: 0.2vw;
-  height: 0.1vh;
-}
 
+    .selection-info-div{
+        width: 100vw;
+        height: 20vh;
+        margin-top: 5vh;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        justify-content: space-between;
+    }
 
- 
-/* Handle */
-::-webkit-scrollbar-thumb {
-  background: rgb(0, 0, 0); 
-}
+    .selection-info-div input{
+        width: 25%;
+        height: 80%;
+        margin-right: 8%;
+        margin-bottom: 5%;;
+    }
 
+    .selection-info-div div p{
+        color: white;
+    }
 
+    /* Handle */
+    ::-webkit-scrollbar-thumb {
+    background: rgb(0, 0, 0); 
+    }
 </style>
 

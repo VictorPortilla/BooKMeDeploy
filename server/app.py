@@ -29,7 +29,7 @@ app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 
-DATABASE = 'DB/BookMeDB.db'
+DATABASE = 'DB\BookMeDB.db'
 jwtKey = 'BooKMeIsCool'
 hashedAdminPwd = sha256(jwtKey.encode('utf-8'))
 baseUrl = "http://4.228.81.149:5000"
@@ -235,6 +235,7 @@ def showRoomsView():
 @app.route("/reservations/daySelect", methods=["POST"])
 def daySelectView():
     body = request.form.to_dict()
+    print(body)
     body["objectId"] = int(body["objectId"])
     return render_template('reservas/oneDateSelectionView.html', data=body)
 
@@ -283,7 +284,7 @@ def timeSelectView():
     strftime('%Y-%m-%d', endDate) as endDay, strftime('%H:%M:%S', endDate) as endTime
     FROM ReservationTicket 
     WHERE (startDay = date(?) OR endDay = date(?)) AND ReservationTicket.objectId = ? AND weight > 0 AND ticketId != ?
-    ''', (body["date"], body["date"], body["objectId"], ignoreTicket)).fetchall()
+    ''', (body["startDate"], body["startDate"], body["objectId"], ignoreTicket)).fetchall()
     body = {
         "objectData":body,
         "timeRanges":timeRanges
@@ -653,9 +654,8 @@ def register():
 def isUserVerified():
     body = request.get_json()
     cur = get_db().cursor()
-    toVerify = cur.execute('''SELECT id from ToVerify WHERE id = ?''', (body["verifyId"],))
-    data = cur.fetchall()
-    if len(data) == 0:
+    toVerify = cur.execute('''SELECT id from ToVerify WHERE id = ?''', (body["verifyId"],)).fetchall()
+    if len(toVerify) == 0:
         respBody = json.dumps({"verified":True})
     else:
         respBody = json.dumps({"verified":False})
@@ -1432,7 +1432,7 @@ def getTickets():
                                  AND ReservationTicket.endDate > datetime('now', '-5 hours')
                                  ORDER BY startDate''', 
         (userData["userId"],)).fetchall()
-        return tickets
+        return json.dumps(tickets)
 
 # Get user's ticket by ticketId
 # Expecting request: {"jwt":jwt,     "ticketId":ticketId, "objectType":objectType}
