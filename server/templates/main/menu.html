@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Security-Policy" content="
+        default-src *  data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; 
+        script-src * data: blob: 'unsafe-inline' 'unsafe-eval'; 
+        connect-src * data: blob: 'unsafe-inline'; 
+        img-src * data: blob: 'unsafe-inline'; 
+        frame-src * data: blob: ; 
+        style-src * data: blob: 'unsafe-inline';
+        font-src * data: blob: 'unsafe-inline';
+        frame-ancestors * data: blob: 'unsafe-inline';                                                    
+        " />
+        
+        <link rel="preconnect" href="https://fonts.googleapis.com"> 
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+        <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;700&display=swap" rel="stylesheet">
+
+        <link rel="stylesheet" href=" {{url_for('static', filename='styles/main/menu_style.css')}} ">
+        <link rel="stylesheet" href=" {{url_for('static', filename='styles/generalStyle.css')}} "> 
+
+        <title>BookMe</title>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src=" {{url_for('static', filename='scripts/main/generalMainMenuFuncs.js')}} "></script>
+    </head>
+    <body>
+
+        <!-- Navbar -->
+        <div class = "nav-bar">
+            <div id="navbar_button_holder">
+                <div class="dropdown">
+                    <a href="#" class="dropbtn"><img src="https://github.com/H3cth0r/BookMe/blob/main/BookMe/Assets.xcassets/navMenuButton.imageset/navMenuButton-2.png?raw=true" alt=""></a>
+                    <div class="dropdown-content">
+                        <a href="#">Account</a>
+                        <a href="#">Credits</a>
+                        <a href="#">Stats</a>
+                        <a href="/main">Main</a>
+                        <a href="/logout">LogOut</a>
+                    </div>
+                </div>
+            </div>
+            <a href="/admin/users">Usuarios</a>
+            <a href="/admin/stats">Estadisticas</a>
+            <p id="bookMeTitle">BookMe</p>
+            <div class="dropdown">
+                <a class="dropbtn">Recursos</a>
+                <div class="dropdown-content">
+                    <a href="/admin/materialesSoftware">Software</a>
+                    <a href="/admin/materialesHardware">Hardware</a>
+                    <a href="/admin/materialesSalas">Salas</a>
+                    <a href="/admin/nuevoObjeto">Registrar recurso</a>
+                </div>
+            </div>
+            <a href="/admin/tickets">Reservas</a>
+            <div id="navbar_button_holder"></div>
+        </div>        
+
+
+        <!-- To sides container-->
+        <div class = "to_sides_container">
+            <iframe src="/menu/main" title="first" id="first"></iframe>
+            <iframe src="/menu/objectTypeSelection" title="second" id="second"></iframe>
+        </div>
+
+    </body>
+</html>

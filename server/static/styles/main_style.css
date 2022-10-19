@@ -22,8 +22,15 @@ p{
 	font-weight	:	normal;
 	color		:	white;
 }
+a{
+	font-family: 'Roobert';
+	font-weight: normal;
+}
 .canvas-holder{
-	background-color:	blue;
+	background-color:	black;
+	position: relative;
+	width: 100vw;
+	height: 100vh;
 }
 .canvas-holder #maincanvas{
 	position	:	absolute;
@@ -52,6 +59,7 @@ p{
 	display		:	flex;
 	flex-direction	:	row;
 	align-items	:	center;
+	justify-content: space-between;
 }
 .main-navbar p{
 	font-size	:	1.2rem;
@@ -67,22 +75,118 @@ p{
 	font-weight	:	bold;
 }
 
-/* INFORMATIVE BANNE* INFORMATIVE BANNER  */
-#bannerId{
-	width		:	100%;
-	height		:	100%;
-	position	:	absolute;
-	top		:	0;
-	left		:	0;
-	display		:	flex;
-	flex-direction	:	column;
+.scrollable-main{
+	width: 100vw;
+	height: 100vh;
+	z-index: 2;
+	position: absolute;
 
+	overflow-y: scroll;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
-#bannerId p{
-	display		:	flex;
-	align-items	:	flex-end;
-	align-self	:	center;
-	height		:	50%;
-	font-size	:	21px;
+.single-row-div{
+	height: 100vh;
+	width: 100vw;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-around;	
 }
+
+
+#hub-img{
+	width: 30vw;
+	height:auto;
+}
+
+.to-column{
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	width: 40vw;
+	text-align: justify;
+}
+#first-info{
+	height: 25vh;
+	line-height: 1.6
+}
+#hub-img{
+	width: 70%;
+	height: auto;
+}
+#second-info{
+	height: 50vh;
+	line-height: 2;
+}
+#third-info{
+	height: 50vh;
+	line-height: 2;
+}
+#fourth-info{
+	justify-content: center;
+}
+
+.main-title{
+	font-size: 150%;
+}
+
+
+
+
+
+.dropdown {
+    float: right;
+    position: relative;
+  }
+  
+  .dropbtn{
+    font-weight: lighter;
+  }
+
+  .dropdown .dropbtn {
+    text-align: center;
+    font-size: 15px;
+    padding: 20px 16px;
+    top: 100%;
+    background-color: inherit;
+    margin: 0;
+  }
+  
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: whitesmoke;
+	opacity: 0.2;
+    min-width: 250px;
+    z-index: 1;
+    top: 100%;
+  }
+  .dropdown-content a{
+	opacity: 2;
+  }
+  
+  .dropdown-content a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+  }
+  
+  .dropdown-content a:hover {
+    color: black;
+  }
+  
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+
+  .dropbtn img{
+    width: 30%;
+    height: 30%;
+  }
+

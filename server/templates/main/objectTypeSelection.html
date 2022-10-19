@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <meta http-equiv="Content-Security-Policy" content="
+        default-src *  data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; 
+        script-src * data: blob: 'unsafe-inline' 'unsafe-eval'; 
+        connect-src * data: blob: 'unsafe-inline'; 
+        img-src * data: blob: 'unsafe-inline'; 
+        frame-src * data: blob: ; 
+        style-src * data: blob: 'unsafe-inline';
+        font-src * data: blob: 'unsafe-inline';
+        frame-ancestors * data: blob: 'unsafe-inline';                                                    
+        " />
+
+        <title>BookMe</title>
+        <link rel="stylesheet" href=" {{url_for('static', filename='styles/main/objectTypeSelection.css')}} ">
+        <link rel="stylesheet" href=" {{url_for('static', filename='styles/generalStyle.css')}} "> 
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src=" {{url_for('static', filename='scripts/main/objectTypeSelection.js')}} "></script>
+    </head>
+    <body>
+
+        <!-- Rows selection -->
+        <div class="selection_row_div">
+            <a href="/reservations/showRooms"><img    id="spaceTypeImg"    src="https://github.com/H3cth0r/BookMe/blob/main/BookMe/Assets.xcassets/typeSpaceButton.imageset/typeSpaceButton-2.png?raw=true" alt=""></a>
+            <a href="/reservations/showSoftware"><img id="softwareTypeImg" src="https://github.com/H3cth0r/BookMe/blob/main/BookMe/Assets.xcassets/typeSoftwareButton.imageset/typeSoftwareButton-2.png?raw=true" alt=""></a>
+            <a href="/reservations/showHardware"><img id="hardwareTypeImg" src="https://github.com/H3cth0r/BookMe/blob/main/BookMe/Assets.xcassets/typeHardwareButton.imageset/typeHardwareButton-2.png?raw=true" alt=""></a>
+        </div>
+        
+    </body>
+</html>

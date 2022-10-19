@@ -1,0 +1,125 @@
+html { visibility:hidden; }
+/* navbar button holder */
+#navbar_button_holder{
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* Navbar style*/
+.nav-bar {
+    width: 100vw;    
+    height: 10vh;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+}
+.nav-bar p{
+    width: 5vw;
+}
+.nav-bar div{
+    width: 5vw;
+}
+
+
+
+
+.dropdown {
+    float: right;
+    position: relative;
+  }
+  
+  .dropbtn{
+    font-weight: lighter;
+  }
+
+  .dropdown .dropbtn {
+    text-align: center;
+    font-size: 15px;
+    padding: 20px 16px;
+    top: 100%;
+    background-color: inherit;
+    margin: 0;
+  }
+  
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 250px;
+    z-index: 1;
+    top: 100%;
+  }
+  
+  .dropdown-content a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+  }
+  
+  .dropdown-content a:hover {
+    color: #ddd;
+  }
+  
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+
+  .dropbtn img{
+    width: 50%;
+    height: 50%;
+  }
+
+
+
+
+
+#bookMeTitle{
+    font-size: 160%;
+}
+
+/* two sides container style */
+.to_sides_container{
+    width: 100vw;
+    height: 90vh;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.to_sides_container iframe{
+    width: 430px;
+    height: 650px;
+    border: 0;
+}
+
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

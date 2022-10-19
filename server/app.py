@@ -1,11 +1,14 @@
-from flask import Flask, request, g, make_response, redirect, render_template, url_for
+from flask import Flask, request, g, make_response, redirect, render_template, url_for, Response
 from flask_mail import Mail, Message
+from flask_cors import CORS, cross_origin
+from app_conf import smpt_password
 from hashlib import new, sha256, sha1
 from hmac import compare_digest
 import json
 import jwt
 import sqlite3
 import base64
+from os.path import exists
 from datetime import datetime, timedelta, timezone
 from qrcode import QRCode, constants
 
@@ -13,11 +16,14 @@ print("Server started")
 
 mail = Mail()
 app = Flask(__name__)
+cors = CORS(app)
+
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 app.config['MAIL_SERVER']='smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'bookmebot@gmail.com'
-app.config['MAIL_PASSWORD'] = 'czufauxtrhvdwnic'
+app.config['MAIL_PASSWORD'] = smpt_password
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
@@ -61,38 +67,39 @@ def genQr(code):
                 box_size=8,
                 border=1,
     )
-    qr.add_data(baseUrl + "/api/getTicket/" + code[:10]) #would idealy show ticket html
+    qr.add_data(baseUrl + "/api/getTicket/" + code[:10]) 
     qr.make(fit=True)
     img = qr.make_image(fill_color='black', black_color='white')
     print(type(img))
     img.save("static/resources/qrCodes/" + code + ".png")
 
 '''-----------------------'''
-'''----FRONTEND ROUTES----'''
+'''----FRONTEND VIEWS-----'''
 '''-----------------------'''
 
-'''---VIEWS---'''
+'''--- MAIN PAGE ---'''
 
 @app.route("/")
 def mainView(): 
     return render_template('main.html')
 
+'''--- AUTHENTIFICATION ---'''
+
 @app.route("/authPrev", methods=["GET"])
 def authPrevView():
     if True:
-        return render_template('LogandReg.html')
+        return render_template('auth/logOrReg.html')
 
 @app.route("/login", methods=["GET"])
+@cross_origin(origins='*', supports_credentials=True)
 def loginView():
     if True:
-        return render_template('log.html')
-        
-        
+        return render_template('auth/login.html')
 
 @app.route("/register", methods=["GET"])
 def registerView():
     if True:
-        return render_template('reg.html')
+        return render_template('auth/register.html')
 
 @app.route("/logout", methods=['GET'])
 def logoutView(name=None):
@@ -105,13 +112,16 @@ def logoutView(name=None):
 @app.route("/register/verifying", methods=["GET"])
 def registerVerifying():
     if True:
-        return render_template('verify.html')
+        return render_template('auth/verify.html')
 
+# error 112 = no user verification expected from this email
 @app.route("/register/verify/<hashKey>", methods=["GET"])
 def registerVerifyView(hashKey):
     if True:
         cur = get_db().cursor()
         u = cur.execute('''SELECT * FROM ToVerify WHERE hashKey = ? ORDER BY id DESC''', (hashKey,)).fetchone()
+        if u is None:
+            return redirect("/login?error=112", code=302)
         emailSearch = cur.execute("SELECT Users.userId FROM Users WHERE email = ?", (u["email"],)).fetchone()
         usernameSearch = cur.execute("SELECT Users.userId FROM Users WHERE username = ?", (u["username"],)).fetchone()
         if emailSearch is not None:
@@ -128,7 +138,44 @@ def registerVerifyView(hashKey):
         cur.execute('''DELETE FROM ToVerify WHERE email = ? OR username = ?''', (u["email"], u["username"]))
         return redirect("/login?fromVerify=true", code=302)
 
+# error 112 = no user verification expected from this email
+@app.route("/auth/verifyMail/<hashKey>", methods=["GET"])
+def verifyMailView(hashKey):
+    if True:
+        cur = get_db().cursor()
+        u = cur.execute('''SELECT * FROM ToVerify WHERE hashKey = ? ORDER BY id DESC''', (hashKey,)).fetchone()
+        if u is None:
+            return redirect("/login?error=112", code=302)
+        cur.execute('''UPDATE Users SET firstName = ?, lastName = ?, username = ?, birthDate = ?,
+                       organization = ?, email = ?, ocupation = ?, countryId = ?, hashPassword = ?
+                       WHERE userId = ?;''',
+                       (u["firstName"], u["lastName"], u["username"], u["birthDate"],
+                       u["organization"], u["email"], u["ocupation"], u["countryId"], u["hashPassword"], u["userId"]))
+        cur.execute('''DELETE FROM ToVerify WHERE email = ? OR username = ? OR hashKey = ?''', (u["email"], u["username"], hashKey))
+        return redirect("/login?fromVerify=true", code=302)
+
+'''---MAIN MENU---'''
+
+@app.route("/menu", methods=["GET"])
+def menuView():
+    if jwtValidated(request.cookies.get('jwt')):
+        return render_template('main/menu.html')
+    else:
+        return redirect("/login", code=302)
+
+@app.route("/menu/main", methods=["GET"])
+def mainAppMenuView():
+    if jwtValidated(request.cookies.get('jwt')):
+        return render_template('main/mainAppMenu.html')
+
+@app.route("/menu/objectTypeSelection", methods=["GET"])
+def menuObjectTypeSelectionView():
+    if jwtValidated(request.cookies.get('jwt')):
+        return render_template('main/objectTypeSelection.html')
+
 '''---RESERVATIONS---'''
+
+# selección X > day(s) select > time select > show ticket >(newTicket)
 
 @app.route("/reservations/showHardware", methods=["GET"])
 def showHardwareView():
@@ -147,13 +194,143 @@ def showHardwareView():
         ON (ResTicket.objectID = DT2.generalObjectID) WHERE availability = 1 
         GROUP BY DT2.generalObjectID
         ''').fetchall()
-        return render_template("seleccionHardware.html", HRDWR=hardware)
+        return render_template("reservas/seleccionHardware.html", HRDWR=hardware)
 
+@app.route("/reservations/showSoftware", methods=["GET"])
+def showSoftwareView():
+    if jwtValidated(request.cookies.get('jwt')):
+        cur = get_db().cursor()
+        software = cur.execute('''
+        SELECT generalObjectID, identifier, name, brand, description, operativeSystem, maxDays, SUM(ResTicket.weight) as totalWeight FROM
+        (SELECT DT.*, AvailableObjects.generalObjectID, AvailableObjects.sO FROM 
+        (SELECT (SoftwareClass.prefix || "-" || SoftwareObjects.inClassId) as identifier, inTypeId, SoftwareClass.*
+        FROM SoftwareObjects LEFT JOIN SoftwareClass ON (SoftwareClass.classId = SoftwareObjects.classId) WHERE deleted = 0) DT
+        INNER JOIN AvailableObjects 
+        ON (DT.inTypeId = AvailableObjects.sO)) DT2
+        LEFT JOIN 
+        (SELECT ReservationTicket.objectId, ReservationTicket.weight FROM ReservationTicket WHERE (ReservationTicket.startDate 
+        BETWEEN datetime("now", "-5 hours") AND datetime("now", "-5 hours", "+7 days", "-0.001 seconds")) AND weight > 0) ResTicket
+        ON (ResTicket.objectID = DT2.generalObjectID) WHERE availability = 1
+        GROUP BY DT2.generalObjectID
+        ''').fetchall()
+        return render_template("reservas/seleccionSoftware.html", SFTWR=software)
 
-@app.route("/reservations/makeReservation", methods=["GET"])
+@app.route("/reservations/showRooms", methods=["GET"])
+def showRoomsView():
+    if jwtValidated(request.cookies.get('jwt')):
+        cur = get_db().cursor()
+        salas = cur.execute('''
+        SELECT generalObjectID, name, description, location, capacity, maxDays, SUM(ResTicket.weight) as totalWeight FROM
+        (SELECT Rooms.*, AvailableObjects.generalObjectID, AvailableObjects.rO FROM 
+        Rooms INNER JOIN AvailableObjects 
+        ON (Rooms.roomId = AvailableObjects.rO) WHERE deleted = 0) DT2
+        LEFT JOIN 
+        (SELECT ReservationTicket.objectId, ReservationTicket.weight FROM ReservationTicket WHERE (ReservationTicket.startDate 
+        BETWEEN datetime("now", "-5 hours") AND datetime("now", "-5 hours", "+7 days", "-0.001 seconds")) AND weight > 0) ResTicket
+        ON (ResTicket.objectID = DT2.generalObjectID) WHERE availability = 1
+        GROUP BY DT2.generalObjectID
+        ''').fetchall()
+        return render_template("reservas/seleccionSalas.html", rooms=salas)
+
+@app.route("/reservations/daySelect", methods=["POST"])
+def daySelectView():
+    body = request.form.to_dict()
+    body["objectId"] = int(body["objectId"])
+    return render_template('reservas/oneDateSelectionView.html', data=body)
+
+@app.route("/reservations/daysSelect", methods=["POST"])
+def daysSelectView():
+    body = request.form.to_dict()
+    body["objectId"] = int(body["objectId"])
+    cur = get_db().cursor()
+    if "ignoreTicket" in body:
+        ignoreTicket = body["ignoreTicket"]
+    else:
+        ignoreTicket = "-1"
+    startDate = (datetime.now(timezone.utc) - timedelta(hours=5)).strftime("%Y-%m-%d")
+    endDate = (datetime.now(timezone.utc) - timedelta(hours=5) + timedelta(days=30)).strftime("%Y-%m-%d")
+    query = cur.execute('''
+    SELECT strftime('%Y-%m-%d', startDate) as startDay, strftime('%Y-%m-%d', endDate) as endDay
+    FROM ReservationTicket WHERE ((startDay BETWEEN date(?) AND date(?))
+    OR (endDay BETWEEN date(?) AND date(?))) AND ReservationTicket.objectId = ? AND weight > 0 AND ticketId != ?
+    ''', (startDate, endDate, startDate, endDate, body["objectId"], ignoreTicket)).fetchall()
+    
+    days = []
+    currDay = datetime.strptime(startDate, "%Y-%m-%d")
+    for daysRange in query:
+        sd = datetime.strptime(daysRange["startDay"], "%Y-%m-%d")
+        ed = datetime.strptime(daysRange["endDay"], "%Y-%m-%d")
+        if currDay < sd:
+            currDay = sd
+        while currDay <= ed:
+            days.append(currDay.strftime("%Y-%m-%d"))
+            currDay = currDay + timedelta(days=1)
+
+    return render_template('reservas/twoDatesSelectionView.html', data=body, days=days)
+
+@app.route("/reservations/timeSelect", methods=["POST"])
+def timeSelectView():
+    body = request.form.to_dict()
+    body["objectId"] = int(body["objectId"])
+
+    if "ignoreTicket" in body:
+        ignoreTicket = body["ignoreTicket"]
+    else:
+        ignoreTicket = "-1"
+    cur = get_db().cursor()
+    timeRanges = cur.execute('''
+    SELECT startDate, endDate, strftime('%Y-%m-%d', startDate) as startDay, strftime('%H:%M:%S', startDate) as startTime,
+    strftime('%Y-%m-%d', endDate) as endDay, strftime('%H:%M:%S', endDate) as endTime
+    FROM ReservationTicket 
+    WHERE (startDay = date(?) OR endDay = date(?)) AND ReservationTicket.objectId = ? AND weight > 0 AND ticketId != ?
+    ''', (body["date"], body["date"], body["objectId"], ignoreTicket)).fetchall()
+    body = {
+        "objectData":body,
+        "timeRanges":timeRanges
+    }
+
+    return render_template('/reservas/reloj.html', objectData = body)
+
+@app.route("/reservations/showTicket", methods=["POST"])
+def showTicketView():
+    body = request.form.to_dict()
+    body["objectId"] = int(body["objectId"])
+    return render_template('reservas/showTicket.html', TICKET=body)
+
+'''
+{
+    "objectData":{
+
+    },
+    "timeRanges":[
+        {
+        "startDate": "2022-10-06 16:00:00.000",
+        "endDate": "2022-10-06 18:00:00.000",
+        "startDay": "2022-10-06",
+        "startTime": "16:00:00",
+        "endDay": "2022-10-06",
+        "endTime": "18:00:00"
+        },
+        {
+        "startDate": "2022-10-06 19:00:00.000",
+        "endDate": "2022-10-06 22:00:00.000",
+        "startDay": "2022-10-06",
+        "startTime": "19:00:00",
+        "endDay": "2022-10-06",
+        "endTime": "22:00:00"
+        }
+    ]
+}
+'''
+
+@app.route("/reservations/makeReservation", methods=["POST"])
 def reserveView():
     if jwtValidated(request.cookies.get('jwt')):
-        return render_template("reservar.html")
+        cur = get_db().cursor()
+        rooms = cur.execute('''
+        SELECT * FROM Rooms WHERE deleted = 0
+        ''').fetchall()
+        return render_template("reservas/reservar2.html", ROOMS=rooms)
 
 @app.route("/reservations/currentBookings", methods=["GET"])
 def currentBookingsView():
@@ -173,7 +350,7 @@ def currentBookingsView():
                                  ORDER BY startDate''', 
         (userData["userId"], ignoreTicket)).fetchall()
         print(tickets)
-        return render_template('currBooks.html', tickets=tickets)
+        return render_template('reservas/currBooks.html', tickets=tickets)
     else:
         return redirect("/login", code=302)
 
@@ -226,7 +403,17 @@ def getTicketWithQr(qr):
         ticket = cur.execute(query, (ticketInfo["ticketId"], )).fetchone()
         print(ticket)
         #qrPath = "static/resources/qrCodes/" + ticket["qrCode"] + ".png"
-        return render_template('ticketWithQr.html', TICKET=ticket, QRCODE=ticket["qrCode"])
+        return render_template('reservas/ticketWithQr.html', TICKET=ticket, QRCODE=ticket["qrCode"])
+
+'''--- USER MANAGEMENT ---'''
+
+@app.route("/auth/forgotPassword", methods=["GET"])
+def forgotPasswordView():
+    return render_template("auth/forgot.html")
+
+@app.route("/auth/newPassword/<hashKey>", methods=["GET"])
+def newPasswordView(hashKey):
+    return render_template("auth/newPassword.html", hashKey=hashKey)
 
 '''---ADMIN---'''
 
@@ -237,7 +424,7 @@ def newObjectView():
         userData = jwt.decode(request.cookies.get('jwt'), jwtKey, algorithms="HS256")
         if userData["admin"] == 0:
             return "Only admins"
-        return render_template('objeto_nuevo.html')
+        return render_template('admin/objeto_nuevo.html')
     else:
         return redirect("/login", code=302)
 
@@ -256,7 +443,7 @@ def getHardwareView():
         GROUP BY DT.classId
         ''').fetchall()
 
-        return render_template('materialesHard.html', hardW=hardware)
+        return render_template('admin/materialesHard.html', hardW=hardware)
     else:
         return redirect("/login", code=302)
 
@@ -274,7 +461,7 @@ def getSoftwareView():
         LEFT JOIN SoftwareObjects ON (DT.classId = SoftwareObjects.classId)
         GROUP BY DT.classId
         ''').fetchall()
-        return render_template('materialesSoftware.html', softW=software)
+        return render_template('admin/materialesSoftware.html', softW=software)
     else:
         return redirect("/login", code=302)
 
@@ -289,7 +476,7 @@ def getSalasView():
         rooms = cur.execute('''
         SELECT * FROM Rooms WHERE deleted = 0
         ''').fetchall()
-        return render_template('materialesSalas.html', salas=rooms)
+        return render_template('admin/materialesSalas.html', salas=rooms)
     else:
         return redirect("/login", code=302)
 
@@ -301,10 +488,10 @@ def getUsersView():
         if userData["admin"] == 0:
             return "Only admins"
         cur = get_db().cursor()
-        rooms = cur.execute('''
+        users = cur.execute('''
         SELECT * FROM Users WHERE deleted = 0
         ''').fetchall()
-        return render_template('materialesSalas.html', salas=rooms)
+        return render_template('admin/users.html', users=users)
     else:
         return redirect("/login", code=302)
 
@@ -321,7 +508,7 @@ def getTicketsView():
         (SELECT * FROM ReservationTicket WHERE weight > 0) DT
         LEFT JOIN Users ON (Users.userId =  DT.userId)
         ''').fetchall()
-        return render_template('reservaciones.html', res=tickets)
+        return render_template('admin/reservaciones.html', res=tickets)
     else:
         return redirect("/login", code=302)
 
@@ -332,6 +519,13 @@ def getTicketsView():
 
 '''---USER MANAGEMENT---'''
 
+def _build_cors_preflight_response():
+    response = make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
 # --- auth errors ---
 # 101 invalid email
 # 102 blocked
@@ -340,8 +534,11 @@ def getTicketsView():
 # Expecting request: {("username":newUsername || "email":newEmail), "hashPassword":hashPassword}
 # Response: {"available":bool}
 # Optional response: {"errorId":errorId}
-@app.route("/api/login", methods=['POST'])
+@app.route("/api/login", methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', supports_credentials=True)
 def login(name=None):
+    if request.method == "OPTIONS": # CORS preflight
+        return _build_cors_preflight_response()
     body = request.get_json()
     cur = get_db().cursor()
     resp = make_response()
@@ -351,6 +548,8 @@ def login(name=None):
                                      Users.username,
                                      Users.firstName,
                                      Users.lastName,
+                                     Users.birthDate,
+                                     Users.organization,
                                      Users.hashPassword,
                                      Users.admin,
                                      Users.blocked
@@ -362,6 +561,8 @@ def login(name=None):
                                      Users.username,
                                      Users.firstName,
                                      Users.lastName,
+                                     Users.birthDate,
+                                     Users.organization,
                                      Users.hashPassword,
                                      Users.admin,
                                      Users.blocked
@@ -382,10 +583,12 @@ def login(name=None):
         respBody = json.dumps({"authorized":True})
         resp.set_cookie("jwt", jwt.encode(user, jwtKey, algorithm="HS256"))
     else:
+        respBody = json.dumps({"authorized":False, "errorId":103}) #, "desc":"Wrong password"
         print(user["hashPassword"])
         print(body["password"])
 
     resp.set_data(respBody)
+    resp.headers.add("Access-Control-Allow-Origin","*")
     return resp
 
 
@@ -398,7 +601,7 @@ def logout(name=None):
     return resp
 # --- register errors ---
 # 110 email already registered
-# 111 email already registered
+# 111 user already registered
 
 # Expecting request:
 {
@@ -436,7 +639,7 @@ def register():
         mail.send(msg)
         body["hashPassword"] = sha256(body["hashPassword"].encode('utf-8')).hexdigest()
         cur.execute('''
-                    INSERT INTO "main"."toVerify" ("firstName", "lastName", "username", "birthDate",
+                    INSERT INTO "main"."ToVerify" ("firstName", "lastName", "username", "birthDate",
                     "organization", "email", "ocupation", "countryId", "hashPassword", "hashKey") 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);''',
                     (body["firstName"], body["lastName"], body["username"], body["birthDate"], 
@@ -444,6 +647,44 @@ def register():
         respBody = json.dumps({"registered":True})
     return respBody
 
+# Expecting request:
+# {"verifyId" = verifyId}
+@app.route("/api/isVerified", methods=["POST"])
+def isUserVerified():
+    body = request.get_json()
+    cur = get_db().cursor()
+    toVerify = cur.execute('''SELECT id from ToVerify WHERE id = ?''', (body["verifyId"],))
+    data = cur.fetchall()
+    if len(data) == 0:
+        respBody = json.dumps({"verified":True})
+    else:
+        respBody = json.dumps({"verified":False})
+    return respBody
+
+@app.route("/api/forgottenPassword", methods=["POST"])
+def forgottenPassword():
+    body = request.get_json()
+    cur = get_db().cursor()
+    dateRegistered = (datetime.now(timezone.utc) - timedelta(hours=5)).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    key = body["email"] + dateRegistered
+    hashKey = sha256(key.encode('utf-8')).hexdigest()[:20]
+    cur.execute('''INSERT INTO ForgottenPassword(userId, hashKey) SELECT Users.userId, ? FROM Users WHERE Users.email = ?''',
+                (hashKey, body["email"]))
+    msg = Message("Create a new password!",
+                    sender="bookmebot@gmail.com",
+                    recipients=[body["email"]])
+    msg.html = render_template("auth/forgotPasswordMail.html", hashKey=hashKey)
+    mail.send(msg)
+    return {"sent":True}
+
+@app.route("/api/newPassword", methods=["POST"])
+def newPassword():
+    body = request.get_json()
+    cur = get_db().cursor()
+    cur.execute('''UPDATE Users SET hashPassword = ? WHERE Users.userId IN
+                   (SELECT ForgottenPassword.userId FROM ForgottenPassword WHERE ForgottenPassword.hashKey = ?)''', 
+                (body["hashPassword"], body["hashKey"]))
+    cur.execute('''DELETE ForgottenPassword WHERE userId IN (SELECT ForgottenPassword.userId WHERE hashKey = ?)''', (body["hashKey"],))
 '''
 {
   "quantity":3,
@@ -454,6 +695,49 @@ def register():
   "maxDays":"15"
 }
 '''
+'''
+{
+  "jwt":,
+  "objectId":4,
+  "objectType":"HRDWR", 
+  "objectName":"DELL PC", 
+  "startDate":"2022-10-2 12:00:00.000",
+  "endDate":"2022-10-2 22:00:00.000",
+  "description":"Reserva Dell"
+}
+'''
+
+@app.route("/api/newTicket", methods=["POST"])
+def newTicket():
+    if jwtValidated(request.cookies.get('jwt')):
+        body = request.get_json()
+        userData = jwt.decode(request.cookies.get('jwt'), jwtKey, algorithms="HS256")
+        dateRegistered = (datetime.now(timezone.utc) - timedelta(hours=5)).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        startDate = datetime.strptime(body["startDate"], "%Y-%m-%d %H:%M:%S")
+        endDate = datetime.strptime(body["endDate"], "%Y-%m-%d %H:%M:%S")
+        weight = (endDate - startDate).total_seconds() / 3600
+        startDate = startDate.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        endDate = endDate.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        cur = get_db().cursor()
+        cur.execute('''
+        INSERT INTO "main"."ReservationTicket" 
+        ("dateRegistered", "objectId", "objectType", "objectName", "startDate", "endDate", "userId", "description", "weight") VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''',
+        (dateRegistered, body["objectId"], body["objectType"], body["objectName"], startDate, endDate, userData["userId"], body["description"], weight))
+        # ticketId + userId + objectId + dateRegistered
+        qr = str(cur.lastrowid) + str(userData["userId"]) + str(body["objectId"]) + dateRegistered
+        qr = qr.encode('utf-8')
+        qr = sha1(qr).hexdigest()[:10]
+        cur.execute('''UPDATE ReservationTicket SET qrCode = ? WHERE ticketId = ?''',
+                       (qr, cur.lastrowid))
+        genQr(qr)
+        respBody = {"ticketSaved":True}
+        return json.dumps(respBody)
+    else:
+        respBody = {"ticketSaved":True}
+        return json.dumps(respBody)
+
 @app.route("/api/newHardware", methods=["POST"])
 def newHardware():
     if jwtValidated(request.cookies.get('jwt')):
@@ -690,6 +974,7 @@ def editUser():
         elif usernameSearch is not None:
             respBody = json.dumps({"saved":False, "errorId":111})#, "desc":"Username is already registered"
         else:
+            body["hashPassword"] = sha256(body["hashPassword"].encode('utf-8')).hexdigest()[:20]
             cur.execute('''
                         UPDATE Users SET firstName = ?, lastName = ?, username = ?, birthDate = ?, organization = ?, email = ?, ocupation = ?,
                         countryId = ?, hashPassword = ?, admin = ?, blocked = ?
@@ -842,6 +1127,8 @@ def loginApp(name=None):
                                      Users.username,
                                      Users.firstName,
                                      Users.lastName,
+                                     Users.birthDate,
+                                     Users.organization,
                                      Users.hashPassword,
                                      Users.admin,
                                      Users.blocked
@@ -853,10 +1140,12 @@ def loginApp(name=None):
                                      Users.username,
                                      Users.firstName,
                                      Users.lastName,
+                                     Users.birthDate,
+                                     Users.organization,
                                      Users.hashPassword,
                                      Users.admin,
                                      Users.blocked
-                                     FROM Users WHERE username = ?''', #es sensible que el usuario tenga acceso a su id?
+                                     FROM Users WHERE username = ?''', 
                            (body['username'],)).fetchone()
     else:
         user = None
@@ -868,7 +1157,16 @@ def loginApp(name=None):
     elif user["hashPassword"] == body["password"]:
         user.pop("hashPassword")
         user["exp"] = datetime.now(timezone.utc) + timedelta(days=7)
-        respBody = json.dumps({"authorized":True, "jwt":jwt.encode(user, jwtKey, algorithm="HS256")})
+        pfpPath = "static/resources/pfps/" + str(user["userId"]) +".png"
+        if exists(pfpPath):
+            with open(pfpPath, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read())
+        else:
+            pfpPath = "static/resources/pfps/generic.png"
+            with open(pfpPath, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read())
+        pfp = encoded_string.decode('utf-8')
+        respBody = json.dumps({"authorized":True, "jwt":jwt.encode(user, jwtKey, algorithm="HS256"), "pfp":pfp})
     else:
         respBody = json.dumps({"authorized":False, "errorId":103}) #, "desc":"Wrong pwd"
 
@@ -901,15 +1199,17 @@ def registerApp():
         msg = Message("Verify your new BooKMe account!",
                        sender="bookmebot@gmail.com",
                        recipients=[body["email"]])
-        msg.body = render_template()
+        msg.body = render_template("mailVerification/verification.html", hashKey=hashKey)
+        msg.html = render_template("mailVerification/verification.html", hashKey=hashKey)
         mail.send(msg)
+        print("http://10.48.219.224:2000/register/verify/" + hashKey)
         cur.execute('''
-                    INSERT INTO "main"."toVerify" ("firstName", "lastName", "username", "birthDate",
+                    INSERT INTO "main"."ToVerify" ("firstName", "lastName", "username", "birthDate",
                     "organization", "email", "ocupation", "countryId", "hashPassword", "hashKey") 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);''',
                     (body["firstName"], body["lastName"], body["username"], body["birthDate"], 
                     body["organization"], body["email"], body["ocupation"], body["countryId"], body["hashPassword"], hashKey))
-        respBody = json.dumps({"readyToVerify":True})
+        respBody = json.dumps({"readyToVerify":True, "verifyId":cur.lastrowid})
     return respBody
 
 # Check if new user data is valid.
@@ -919,22 +1219,23 @@ def registerApp():
 @app.route("/app/api/verifyNewUserData", methods=["POST"])
 def verifyNewUserData():
     body = request.get_json()
-    userData = jwt.decode(body["jwt"], jwtKey, algorithms="HS256")
-    cur = get_db().cursor()
-    respBody = {"available":True, "errorIds":[]}
-    emailSearch = cur.execute("SELECT Users.userId FROM Users WHERE email = ? AND userId != ?", (body["email"], userData["userId"])).fetchone()
-    if emailSearch is not None:
-        respBody["available"] = False
-        respBody["errorIds"].append(110) #, "desc":"Email is already registered"
-    usernameSearch = cur.execute("SELECT Users.userId FROM Users WHERE username = ? AND userId != ?", (body["username"], userData["userId"])).fetchone()
-    if usernameSearch is not None:
-        respBody["available"] = False
-        respBody["errorIds"].append(111) #, "desc":"Username is already registered"
-    
-    return json.dumps(respBody)
+    if jwtValidated(body["jwt"]):
+        userData = jwt.decode(body["jwt"], jwtKey, algorithms="HS256")
+        cur = get_db().cursor()
+        respBody = {"available":True, "errorIds":[]}
+        emailSearch = cur.execute("SELECT Users.userId FROM Users WHERE email = ? AND userId != ?", (body["email"], userData["userId"])).fetchone()
+        if emailSearch is not None:
+            respBody["available"] = False
+            respBody["errorIds"].append(110) #, "desc":"Email is already registered"
+        usernameSearch = cur.execute("SELECT Users.userId FROM Users WHERE username = ? AND userId != ?", (body["username"], userData["userId"])).fetchone()
+        if usernameSearch is not None:
+            respBody["available"] = False
+            respBody["errorIds"].append(111) #, "desc":"Username is already registered"
+        
+        return json.dumps(respBody)
 
 # Change user data if old password is correct.
-# Expecting request: {"jwt":jwt, "oldHashPassword":hashPassword ,"firstName":newName, "lastName":newSurname, "username":newUsername, "birthDate":newBirth, 
+# Expecting request: {"jwt":jwt, "oldHashPassword":hashPassword, "pfp":base64Pfp, "firstName":newName, "lastName":newSurname, "username":newUsername, "birthDate":newBirth, 
 # "organization":newOrganization, "email":newEmail, "hashPassword":newHashPassword}
 # Response: {"saved":bool}
 
@@ -950,6 +1251,25 @@ def changeUserData():
             respBody = {"saved":False, "errorId":103}
             return json.dumps(respBody)
         
+        if body["email"] != userData["email"]:
+            dateRegistered = (datetime.now(timezone.utc) - timedelta(hours=5)).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            key = body["username"] + body["email"] + dateRegistered
+            hashKey = sha256(key.encode('utf-8')).hexdigest()[:20]
+            msg = Message("Verify your new email for your current BooKMe account!",
+                        sender="bookmebot@gmail.com",
+                        recipients=[body["email"]])
+            msg.body = render_template("mailVerification/mailVerification.html", hashKey=hashKey)
+            msg.html = render_template("mailVerification/mailVerification.html", hashKey=hashKey)
+            mail.send(msg)
+            cur.execute('''
+                        INSERT INTO "main"."ToVerify" ("userId", "firstName", "lastName", "username", "birthDate",
+                        "organization", "email", "ocupation", "countryId", "hashPassword", "hashKey") 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);''',
+                        (userData["userId"], body["firstName"], body["lastName"], body["username"], body["birthDate"], 
+                        body["organization"], body["email"], body["ocupation"], body["countryId"], body["hashPassword"], hashKey))
+            respBody = {"saved":False, "errorId":0}
+            return json.dumps(respBody)
+
         if body["hashPassword"] != "":
             query = '''UPDATE Users 
                    SET firstName = ?, lastName = ?, username = ?, birthDate = ?, organization = ?, email = ?, hashPassword = ?
@@ -964,8 +1284,31 @@ def changeUserData():
                         userData["userId"])
 
         cur.execute(query, toInsert)
+        if body["pfp"] != "":
+            with open("static/resources/pfps/" + str(userData["userId"]) + ".png", "wb") as fh:
+                fh.write(base64.b64decode(body["pfp"]))
 
-        respBody = {"saved":True}
+        user = cur.execute('''SELECT Users.userId, 
+                                     Users.email,
+                                     Users.username,
+                                     Users.firstName,
+                                     Users.lastName,
+                                     Users.birthDate,
+                                     Users.organization,
+                                     Users.admin,
+                                     Users.blocked
+                                     FROM Users WHERE userId = ?''', 
+                           (userData["userId"],)).fetchone()
+        pfpPath = "static/resources/pfps/" + str(userData["userId"]) +".png"
+        if exists(pfpPath):
+            with open(pfpPath, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read())
+        else:
+            pfpPath = "static/resources/pfps/generic.png"
+            with open(pfpPath, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read())
+        pfp = encoded_string.decode('utf-8')
+        respBody = {"saved":True, "jwt":jwt.encode(user, jwtKey, algorithm="HS256"), "pfp":pfp}
         return json.dumps(respBody)
 
 '''---RESERVATION MANAGEMENT---'''
@@ -1196,7 +1539,7 @@ def updateQrCodes():
 '''
 
 @app.route("/app/api/newTicket", methods=["POST"])
-def newTicket():
+def newTicketApp():
     body = request.get_json()
     if jwtValidated(body["jwt"]):
         userData = jwt.decode(body["jwt"], jwtKey, algorithms="HS256")
@@ -1286,6 +1629,14 @@ def statsApp():
         respBody["favObjectTypeReservations"] = favObjTypeQuery["ammount"]
         return json.dumps(respBody) 
 
+@app.after_request
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'
+    header['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    header['Access-Control-Allow-Methods'] = 'OPTIONS, HEAD, GET, POST, DELETE, PUT'
+    response.headers = header
+    return response
 
 @app.teardown_appcontext
 def close_connection(exception):    
