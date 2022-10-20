@@ -33,7 +33,7 @@ DATABASE = 'DB\BookMeDB.db'
 jwtKey = 'BooKMeIsCool'
 hashedAdminPwd = sha256(jwtKey.encode('utf-8'))
 baseUrl = "http://4.228.81.149:5000"
-#app.config['SECRET_KEY'] = 'super-secret'
+app.config['SECRET_KEY'] = 'super-secret'
 
 def make_dicts(cursor, row):
     return dict((cursor.description[idx][0], value)
@@ -285,12 +285,8 @@ def timeSelectView():
     FROM ReservationTicket 
     WHERE (startDay = date(?) OR endDay = date(?)) AND ReservationTicket.objectId = ? AND weight > 0 AND ticketId != ?
     ''', (body["startDate"], body["startDate"], body["objectId"], ignoreTicket)).fetchall()
-    body = {
-        "objectData":body,
-        "timeRanges":timeRanges
-    }
 
-    return render_template('/reservas/reloj.html', objectData = body)
+    return render_template('/reservas/reloj.html', objectData = body, timeRanges = timeRanges)
 
 @app.route("/reservations/showTicket", methods=["POST"])
 def showTicketView():
@@ -417,6 +413,36 @@ def newPasswordView(hashKey):
     return render_template("auth/newPassword.html", hashKey=hashKey)
 
 '''---ADMIN---'''
+
+# Stats
+@app.route("/admin/stats", methods=["GET"])
+def statsView():
+    if jwtValidated(request.cookies.get('jwt')):
+        userData = jwt.decode(request.cookies.get('jwt'), jwtKey, algorithms="HS256")
+        if userData["admin"] == 0:
+            return "Only admins"
+        cur = get_db().cursor()
+        usuariosTotales = cur.execute('''SELECT count(userId) as usuarios FROM Users''').fetchone()["usuarios"]
+        objetosTotales = cur.execute('''SELECT count(generalObjectId) as objetos FROM AvailableObjects''').fetchone()["objetos"]
+        reservasTotales = cur.execute('''SELECT count(ticketId) as tickets FROM ReservationTicket''').fetchone()["tickets"]
+        administradoresTotales = cur.execute('''SELECT count(userId) as admins FROM Users WHERE admin != 0''').fetchone()["admins"]
+        usuariosTec = cur.execute('''SELECT count(userId) as usuarios FROM Users WHERE organization = "Tec"''').fetchone()["usuarios"]
+        usuariosNoTec = cur.execute('''SELECT count(userId) as usuarios FROM Users WHERE organization != "Tec"''').fetchone()["usuarios"]
+        numeros = {
+            "usuariosTotales" : usuariosTotales,
+            "objetosTotales" : objetosTotales,
+            "reservasTotales" : reservasTotales,
+            "administradoresTotales" : administradoresTotales,
+            "usuariosTec" : usuariosTec,
+            "usuariosNoTec" : usuariosNoTec
+        }
+        cur.row_factory = None
+        query = cur.execute('''SELECT strftime('%Y-%m-%d', startDate) as startDay, count(ticketId) as ammount FROM ReservationTicket GROUP BY startDay''').fetchall()
+        labels = [row[0] for row in query]
+        values = [row[1] for row in query]
+        return render_template('admin/stats.html', numeros = numeros, labels = labels, values = values)
+    else:
+        return redirect("/login", code=302)
 
 # Show new object view
 @app.route("/admin/nuevoObjeto", methods=["GET"])
@@ -826,7 +852,6 @@ def newRoom():
 # Expecting request: 
 '''
 {
-  "jwt":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiQTAxNjU5ODkxQHRlYy5teCIsImZpcnN0TmFtZSI6IlBlcG8iLCJsYXN0TmFtZSI6IkxvcGV6IiwiYWRtaW4iOjAsImJsb2NrZWQiOjAsImV4cCI6MTY2NDgzMzc3N30.nCyDkEwjnaqLmFXbt61lsuOKjhlNd0cBBrkyahc1Ldg",
   "classId":1,
   "quantity":7,
   "name":"Mac Book Air",
@@ -846,6 +871,8 @@ def editHardware():
         if userData["admin"] == 0:
             return "Only admins"
         body = request.get_json()
+        body["quantity"] = int(body["quantity"])
+        print(body)
         cur = get_db().cursor()
         oldHardware = cur.execute('''SELECT DT.*, COUNT(inClassId) as quantity FROM
                                      (SELECT * FROM HardwareClass WHERE classId = ? AND deleted = 0) DT
@@ -868,9 +895,9 @@ def editHardware():
         cur.execute("PRAGMA foreign_keys = OFF")
         cur.execute('''
                     UPDATE HardwareClass SET name = ?, operativeSystem = ?, description = ?, prefix = ?, 
-                    availability = ?, maxDays = ? WHERE classId = ?''',
+                    availability = ? WHERE classId = ?''',
                     (body["name"], body["operativeSystem"], body["description"], body["prefix"], 
-                     int(body["availability"]), body["maxDays"], body["classId"]))
+                    int(body["availability"]), body["classId"]))
 
         return json.dumps({"saved":True})
     return json.dumps({"saved":False})
@@ -897,12 +924,14 @@ def editSoftware():
         if userData["admin"] == 0:
             return "Only admins"
         body = request.get_json()
+        print(body)
         cur = get_db().cursor()
         oldSoftware = cur.execute('''SELECT DT.*, COUNT(inClassId) as quantity FROM
                                      (SELECT * FROM SoftwareClass WHERE classId = ? AND deleted = 0) DT
                                      LEFT JOIN SoftwareObjects ON (DT.classId = SoftwareObjects.classId)
                                      GROUP BY DT.classId''', (body["classId"],)).fetchone()
         oldQuantity = oldSoftware["quantity"]
+        body["quantity"] = int(body["quantity"])
         newQuantity = body["quantity"]
         dObjects = newQuantity - oldQuantity
         if dObjects > 0:
@@ -920,9 +949,9 @@ def editSoftware():
         cur.execute("PRAGMA foreign_keys = OFF")
         cur.execute('''
                     UPDATE SoftwareClass SET name = ?, operativeSystem = ?, description = ?, prefix = ?, 
-                    brand = ?, availability = ?, maxDays = ? WHERE classId = ?''',
+                     availability = ? WHERE classId = ?''',
                     (body["name"], body["operativeSystem"], body["description"], body["prefix"],
-                     body["brand"], int(body["availability"]), body["maxDays"], body["classId"]))
+                     int(body["availability"]), body["classId"]))
 
         return json.dumps({"saved":True})
     return json.dumps({"saved":False})
@@ -951,9 +980,9 @@ def editRooms():
         cur = get_db().cursor()
         cur.execute('''
                     UPDATE Rooms SET name = ?, label = ?, description = ?, location = ?, 
-                    availability = ?, maxDays = ? WHERE roomId = ?''',
+                    availability = ? WHERE roomId = ?''',
                     (body["name"], body["label"], body["description"], body["location"],
-                     int(body["availability"]), body["maxDays"], body["roomId"]))
+                     int(body["availability"]), body["roomId"]))
 
         return json.dumps({"saved":True})
     return json.dumps({"saved":False})
@@ -965,24 +994,39 @@ def editUser():
         if userData["admin"] == 0:
             return "Only admins"
         body = request.get_json()
+        print(body)
         cur = get_db().cursor()
-        emailSearch = cur.execute("SELECT Users.userId FROM Users WHERE email = ?", (body["email"],)).fetchone()
-        usernameSearch = cur.execute("SELECT Users.userId FROM Users WHERE username = ?", (body["username"],)).fetchone()
+        emailSearch = cur.execute("SELECT Users.userId FROM Users WHERE email = ? AND userId != ?", (body["email"],body["userId"])).fetchone()
+        usernameSearch = cur.execute("SELECT Users.userId FROM Users WHERE username = ? AND userId != ?", (body["username"],body["userId"])).fetchone()
         if emailSearch is not None:
             print(emailSearch)
             respBody = json.dumps({"saved":False, "errorId":110})#, "desc":"Email is already registered"
         elif usernameSearch is not None:
             respBody = json.dumps({"saved":False, "errorId":111})#, "desc":"Username is already registered"
         else:
-            body["hashPassword"] = sha256(body["hashPassword"].encode('utf-8')).hexdigest()[:20]
             cur.execute('''
-                        UPDATE Users SET firstName = ?, lastName = ?, username = ?, birthDate = ?, organization = ?, email = ?, ocupation = ?,
-                        countryId = ?, hashPassword = ?, admin = ?, blocked = ?
+                        UPDATE Users SET firstName = ?, lastName = ?, username = ?, birthDate = ?, email = ?, 
+                        countryId = ?, admin = ?, blocked = ?
                         WHERE userId = ?''',
-                        (body["firstName"], body["lastName"], body["username"], body["birthDate"], body["organization"], body["email"],
-                        body["ocupation"], body["countryId"], body["hashPassword"], body["admin"], body["blocked"], body["userId"]))
+                        (body["firstName"], body["lastName"], body["username"], body["birthDate"], body["email"],
+                        body["countryId"],  body["admin"], body["blocked"], body["userId"]))
             respBody = json.dumps({"saved":True})
         return respBody
+    return json.dumps({"saved":False})
+
+@app.route("/api/editTicket", methods=["POST"])
+def editTicket():
+    if jwtValidated(request.cookies.get('jwt')):
+        userData = jwt.decode(request.cookies.get('jwt'), jwtKey, algorithms="HS256")
+        if userData["admin"] == 0:
+            return "Only admins"
+        body = request.get_json()
+        cur = get_db().cursor()
+        print(body)
+        cur.execute('''
+                    UPDATE ReservationTicket SET startDate = ?, endDate = ? WHERE ticketId = ?''',
+                    (body["startDate"], body["endDate"], body["ticketId"],))
+        return json.dumps({"saved":True})
     return json.dumps({"saved":False})
 
 
@@ -1029,7 +1073,7 @@ def deleteRooms():
             return "Only admins"
         body = request.get_json()
         cur = get_db().cursor()
-        cur.execute('''UPDATE Rooms SET deleted = 1 WHERE roomId = ?''',(body["roomId"]))
+        cur.execute('''UPDATE Rooms SET deleted = 1 WHERE roomId = ?''',(body["roomId"],))
         cur.execute('''UPDATE ReservationTicket SET weight = 0 WHERE ReservationTicket.objectId IN 
                        (SELECT AvailableObjects.generalObjectID FROM Rooms
                        LEFT JOIN AvailableObjects ON (Rooms.roomId = AvailableObjects.rO))''', (body["roomId"],))
@@ -1044,7 +1088,7 @@ def deleteUser():
             return "Only admins"
         body = request.get_json()
         cur = get_db().cursor()
-        cur.execute('''UPDATE delete = 1, username = 'DELETED', email = 'DELETED' WHERE userId = ?''', (body["userId"],))
+        cur.execute('''UPDATE Users SET deleted = 1, username = 'DELETED', email = 'DELETED' WHERE userId = ?''', (body["userId"],))
         return json.dumps({"saved":True})
     return json.dumps({"saved":False})
 
@@ -1052,13 +1096,14 @@ def deleteUser():
 def deleteTicket():
     if jwtValidated(request.cookies.get("jwt")):
         userData = jwt.decode(request.cookies.get("jwt"), jwtKey, algorithms="HS256")
-
+        if userData["admin"] == 0:
+            return "Only admins"
         body = request.get_json()
         cur = get_db().cursor()
         cur.execute('''
         DELETE FROM ReservationTicket WHERE ticketId = ?;
         ''',
-        (body["ticketId"], userData["userId"]))
+        (body["ticketId"],))
         respBody = {"ticketDeleted":True}
         return json.dumps(respBody)
     else:
@@ -1479,7 +1524,7 @@ def getTicket():
         with open(qrPath, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read())
         ticket["qrCode64"] = encoded_string.decode('utf-8')
-        return ticket
+        return json.dumps(ticket)
 
 
 # Get user's ticket by qrcode

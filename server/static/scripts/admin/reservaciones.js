@@ -16,8 +16,8 @@ console.log(tickets)
                         <p id="ticketId"> `+ ticketID +`</p>
                         <input type="text" value="` + username + `" id="username">
                         <input type="text" value="` + objetoID + `" id="objeto">
-                        <input type="date" value="` + fechaInicio[0] + `" id="fecha_inicio">
-                        <input type="date" value="` + fechaFin[0] + `" id="fecha_fin">
+                        <input type="date" value="` + fechaInicio[0] + `" class="fecha_inicio`+ticketID+`">
+                        <input type="date" value="` + fechaFin[0] + `" class="fecha_fin`+ticketID+`">
                         
                         <div><button id="row_delete" onclick="delete_button('`+ ticketID +` `+userId+`');">Delete</button></div>
                         <div><button id="row_save" onclick="save_button('`+ticketID+`');">Save</button></div>
@@ -34,14 +34,15 @@ console.log(tickets)
 
     function delete_button(id_val ){
         if (confirm ("¿Estás seguro de que quieres eliminar este objeto?")) {
-            setTimeout(move_rows, 800, id_val);
             var temp = id_val.split(" ");
+            setTimeout(move_rows, 800, temp[0]);
+            
             console.log("deleted " + temp[0]);
             console.log("deleted " + temp[1]);
         $.ajax({
             url: '/api/deleteTicket', //cambiar esto por la ruta del servidor y añadir bien el json
             type: 'POST',
-            data: JSON.stringify({ "ticketId" : temp[0], "userId" : temp[1] }), 
+            data: JSON.stringify({ "ticketId" : temp[0]}), 
             contentType: "application/json",
             dataType: "json",
             success: function(data){
@@ -53,11 +54,16 @@ console.log(tickets)
     
     function save_button(id_val){
         if (confirm ("¿Estás seguro de que quieres guardar los cambios?")) {
+            var fecha_inicio = $(".fecha_inicio"+id_val).val();
+            var fecha_fin = $(".fecha_fin"+id_val).val();
         
+            console.log(fecha_inicio);
+            console.log(fecha_fin);
+            console.log(id_val);
         $.ajax({
             url: '/api/editTicket', //cambiar esto por la ruta del servidor y añadir bien el json
             type: 'POST',
-            data: JSON.stringify({ "ticketID " : ticketID, "username" : username, "objetoID" : objetoID, "fecha_inicio" : fecha_inicio, "fecha_fin" : fecha_fin }),
+            data: JSON.stringify({ "ticketId" : id_val, "startDate" : fecha_inicio, "endDate" : fecha_fin }),
             contentType: "application/json",
             dataType: "json",
             success: function(data){
