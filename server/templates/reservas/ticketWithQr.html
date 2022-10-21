@@ -8,10 +8,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
     <link href="https://fonts.googleapis.com/css?family=Chivo&display=swap" rel="stylesheet" />
 	
-    <script src="{{ url_for('static',filename='scripts/reservas/ticketWithQr.js') }}"></script> " 
+    <script src="{{ url_for('static',filename='scripts/reservas/ticketWithQr.js') }}"></script> 
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/reservas/ticketWithQr.css') }}">
-   
-    <script type="text/javascript">
+    <script>
         var ticket = {{TICKET|tojson}};
     </script>
 
@@ -19,11 +18,12 @@
 <body>
     <div id="imagenes">
         <div id="qrCode">
-            <p>aqui va el qrcode</p>
-            <img src="{{ url_for('static',filename='resources/qrCodes/'+QRCODE+'.png') }}" alt="QR Code" width="100" height="100">
+            <p></p>
+            <img src="{{ url_for('static',filename='resources/qrCodes/' + QRCODE + '.png') }}" alt="QR Code" width="100" height="100">
         </div>
         <div id="profile">
-            <p>img profile</p>
+            <p></p>
+            <img src="{{ url_for('static',filename='resources/pfps/' + USERID + '.png') }}" alt="QR Code" width="100" height="100">
         </div>  
     </div> 
     <div id="barras">
@@ -34,7 +34,7 @@
             
         </div>
         <div id="texto">
-            <p>Confirmed</p>
+            Confirmed
         </div>
     </div>
     <div id="datosTicket">
@@ -42,9 +42,6 @@
             <div id="textoTicket">
                 
             </div>
-            <button id="editar">
-                <a href="#" >EDIT </a>
-            </button>
         </div>
         <div id="diaTicket" class="datosTicked">
             

@@ -67,7 +67,7 @@ def genQr(code):
                 box_size=8,
                 border=1,
     )
-    qr.add_data(baseUrl + "/api/getTicket/" + code[:10]) 
+    qr.add_data(baseUrl + "/reservations/getTicket/" + code[:10]) 
     qr.make(fit=True)
     img = qr.make_image(fill_color='black', black_color='white')
     print(type(img))
