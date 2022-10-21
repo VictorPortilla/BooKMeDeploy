@@ -29,7 +29,7 @@ app.config['MAIL_USE_SSL'] = True
 
 mail = Mail(app)
 
-DATABASE = 'DB\BookMeDB.db'
+DATABASE = 'DB/BookMeDB.db'
 jwtKey = 'BooKMeIsCool'
 hashedAdminPwd = sha256(jwtKey.encode('utf-8'))
 baseUrl = "http://4.228.81.149:5000"
@@ -67,7 +67,7 @@ def genQr(code):
                 box_size=8,
                 border=1,
     )
-    qr.add_data(baseUrl + "/api/getTicket/" + code[:10]) 
+    qr.add_data(baseUrl + "/reservations/getTicket/" + code[:10]) 
     qr.make(fit=True)
     img = qr.make_image(fill_color='black', black_color='white')
     print(type(img))
